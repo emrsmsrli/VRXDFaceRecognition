@@ -1,0 +1,5 @@
+include ':opencv'
+project(':opencv').projectDir = new File('C:\\Users\\Emre\\Desktop\\opencv\\sdk')
+include ':pluginapi'
+project(':pluginapi').projectDir = new File('C:\\Users\\Emre\\AndroidStudioProjects\\VRXDPluginAPI\\pluginapi')
+include ':app'
