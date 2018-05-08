@@ -1,7 +1,11 @@
 package tr.edu.iyte.vrxdfacerecognition
 
 import android.content.Context
+import android.os.Environment
 import android.util.Log
+import org.bytedeco.javacpp.DoublePointer
+import org.bytedeco.javacpp.IntPointer
+import org.bytedeco.javacpp.opencv_core
 import org.opencv.core.*
 import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
@@ -9,10 +13,18 @@ import org.opencv.objdetect.CascadeClassifier
 import org.opencv.objdetect.Objdetect
 import tr.edu.iyte.vrxd.api.IPlugin
 import tr.edu.iyte.vrxd.api.data.Shape
+import java.io.File
+import java.nio.IntBuffer
 import java.util.concurrent.Executors
+
+import org.bytedeco.javacpp.opencv_face
+import org.bytedeco.javacpp.opencv_core.CV_32SC1
+import org.bytedeco.javacpp.opencv_imgcodecs.CV_LOAD_IMAGE_GRAYSCALE
+import org.bytedeco.javacpp.opencv_imgcodecs.imread
 
 class Main : IPlugin {
     private val pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2)
+    private val faceRecognizer = opencv_face.LBPHFaceRecognizer.create()
 
     private var cascade: CascadeClassifier? = null
     private var frameC = 0
@@ -24,7 +36,8 @@ class Main : IPlugin {
 
     override fun onStart(ctx: Context) {
         Log.i(TAG, "starting face recog plugin")
-        cascade = CascadeClassifier("/sdcard/VRXD/a.xml")
+        cascade = CascadeClassifier(Environment.getExternalStorageDirectory().path + "/VRXD/a.xml")
+        train(Environment.getExternalStorageDirectory().path + "/Thesis/trainingDir")
     }
 
     override fun onResume(ctx: Context) {
@@ -60,7 +73,7 @@ class Main : IPlugin {
                 Imgproc.rectangle(img, it, color)
             }
 
-            Imgcodecs.imwrite("/sdcard/VRXD/img/$frameC-img.jpg", img)
+            Imgcodecs.imwrite(Environment.getExternalStorageDirectory().path + "/VRXD/img/$frameC-img.jpg", img)
 
             val ms4 = System.currentTimeMillis()
 
@@ -86,6 +99,43 @@ class Main : IPlugin {
 
     override fun getResources(): List<String> {
         TODO("not implemented")
+    }
+
+    private fun train(trainingDir: String) {
+        val trainingFolder = File(trainingDir)
+
+        val imgFilter = { dir, name ->
+            name = name.toLowerCase()
+            name.endsWith(".jpg") || name.endsWith(".png")
+        }
+
+        val imageFiles = trainingFolder.listFiles(imgFilter)
+
+        val images: opencv_core.MatVector
+        if (imageFiles != null) {
+            images = opencv_core.MatVector(imageFiles.size.toLong())
+        } else {
+            println("No image found in root folder!")
+            return
+        }
+        val labels = opencv_core.Mat(imageFiles.size, 1, CV_32SC1)
+        val labelsBuffer = labels.createBuffer<IntBuffer>()
+        for ((counter, image) in imageFiles.withIndex()) {
+            val img = imread(image.absolutePath, CV_LOAD_IMAGE_GRAYSCALE)
+            val label = Integer.parseInt(image.name.split("-".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0])
+            images.put(counter.toLong(), img)
+            labelsBuffer.put(label)
+        }
+        faceRecognizer.train(images, labels)
+    }
+
+    private fun recognize(testImage: opencv_core.Mat): Int {
+        val label = IntPointer(1)
+        val confidence = DoublePointer(1)
+        faceRecognizer.predict(testImage, label, confidence)
+        val predictedLabel = label.get(0)
+        val pConfidence = confidence.get(0)
+        return predictedLabel
     }
 
     companion object {
