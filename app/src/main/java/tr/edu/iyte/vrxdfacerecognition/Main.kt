@@ -3,9 +3,9 @@ package tr.edu.iyte.vrxdfacerecognition
 import android.content.Context
 import android.os.Environment
 import android.util.Log
-import org.bytedeco.javacpp.DoublePointer
-import org.bytedeco.javacpp.IntPointer
-import org.bytedeco.javacpp.opencv_core
+///import org.bytedeco.javacpp.DoublePointer
+///import org.bytedeco.javacpp.IntPointer
+///import org.bytedeco.javacpp.opencv_core
 import org.opencv.core.*
 import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
@@ -13,18 +13,19 @@ import org.opencv.objdetect.CascadeClassifier
 import org.opencv.objdetect.Objdetect
 import tr.edu.iyte.vrxd.api.IPlugin
 import tr.edu.iyte.vrxd.api.data.Shape
-import java.io.File
-import java.nio.IntBuffer
+//import java.io.File
+//import java.nio.IntBuffer
 import java.util.concurrent.Executors
 
-import org.bytedeco.javacpp.opencv_face
-import org.bytedeco.javacpp.opencv_core.CV_32SC1
-import org.bytedeco.javacpp.opencv_imgcodecs.CV_LOAD_IMAGE_GRAYSCALE
-import org.bytedeco.javacpp.opencv_imgcodecs.imread
+//import org.bytedeco.javacpp.opencv_face
+//import org.bytedeco.javacpp.opencv_core.CV_32SC1
+//import org.bytedeco.javacpp.opencv_imgcodecs.CV_LOAD_IMAGE_GRAYSCALE
+//import org.bytedeco.javacpp.opencv_imgcodecs.imread
+import org.opencv.face.LBPHFaceRecognizer
 
 class Main : IPlugin {
     private val pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2)
-    private val faceRecognizer = opencv_face.LBPHFaceRecognizer.create()
+    //private val faceRecognizer = opencv_face.LBPHFaceRecognizer.create()
 
     private var cascade: CascadeClassifier? = null
     private var frameC = 0
@@ -37,7 +38,6 @@ class Main : IPlugin {
     override fun onStart(ctx: Context) {
         Log.i(TAG, "starting face recog plugin")
         cascade = CascadeClassifier(Environment.getExternalStorageDirectory().path + "/VRXD/a.xml")
-        train(Environment.getExternalStorageDirectory().path + "/Thesis/trainingDir")
     }
 
     override fun onResume(ctx: Context) {
@@ -64,7 +64,7 @@ class Main : IPlugin {
 
             val ms2 = System.currentTimeMillis()
 
-            cascade?.detectMultiScale(img, detected, 1.05, 1, Objdetect.CASCADE_SCALE_IMAGE
+            cascade?.detectMultiScale(img, detected, 1.08, 1, Objdetect.CASCADE_SCALE_IMAGE
                     and Objdetect.CASCADE_DO_CANNY_PRUNING, minSize, maxSize)
 
             val ms3 = System.currentTimeMillis()
@@ -83,6 +83,26 @@ class Main : IPlugin {
             Log.i(TAG, "elapsed draw and write ${ms4 - ms3}ms")
             Log.i(TAG, "detected faces: ${arr.joinToString()}")
             Log.i(TAG, "elapsed frame process total ${System.currentTimeMillis() - ms}ms")
+
+            val trainData = (0..4).map { val m = Imgcodecs.imread("/sdcard/VRXD/train/$it.jpg", Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE)
+                Log.i(TAG, "$it okay ${m.rows()} ${m.cols()}")
+                m
+            }
+
+            try {
+                val recognizer = LBPHFaceRecognizer.create()
+                recognizer.train(trainData.toMutableList(), MatOfInt(1, 1, 1, 1, 1))
+                var label = intArrayOf(0)
+                var conf = doubleArrayOf(0.0)
+                recognizer.predict(Imgcodecs.imread("/sdcard/VRXD/train/5.jpg", Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE), label, conf)
+                Log.i(TAG, "predicted label1: ${label.joinToString()} ${conf.joinToString()}")
+                label = intArrayOf(0)
+                conf = doubleArrayOf(0.0)
+                recognizer.predict(Imgcodecs.imread("/sdcard/VRXD/train/6.jpg", Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE), label, conf)
+                Log.i(TAG, "predicted label2: ${label.joinToString()} ${conf.joinToString()}")
+                //Log.i(TAG, "predicted label1: ${recognizer.predict_label(Imgcodecs.imread("/sdcard/VRXD/train/5.jpg", Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE))}")
+                //Log.i(TAG, "predicted label2: ${recognizer.predict_label(Imgcodecs.imread("/sdcard/VRXD/train/6.jpg", Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE))}")
+            } catch(e: Exception) {e.printStackTrace()}
         }
     }
 
@@ -101,15 +121,12 @@ class Main : IPlugin {
         TODO("not implemented")
     }
 
-    private fun train(trainingDir: String) {
+    /*private fun train(trainingDir: String) {
         val trainingFolder = File(trainingDir)
 
-        val imgFilter = { dir, name ->
-            name = name.toLowerCase()
-            name.endsWith(".jpg") || name.endsWith(".png")
+        val imageFiles = trainingFolder.listFiles{ dir, name ->
+            name.toLowerCase().endsWith(".jpg") || name.endsWith(".png")
         }
-
-        val imageFiles = trainingFolder.listFiles(imgFilter)
 
         val images: opencv_core.MatVector
         if (imageFiles != null) {
@@ -136,7 +153,7 @@ class Main : IPlugin {
         val predictedLabel = label.get(0)
         val pConfidence = confidence.get(0)
         return predictedLabel
-    }
+    }*/
 
     companion object {
         const val TAG = "FACE-RECOGNITION"

@@ -22,7 +22,7 @@ android {
         abi {
             enable true
             reset()
-            include 'x86', 'armeabi', 'armeabi-v7a'
+            include 'armeabi-v7a'
             universalApk false
         }
     }
@@ -32,18 +32,13 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation"org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation 'com.android.support:appcompat-v7:27.1.1'
-    testImplementation 'junit:junit:4.12'
     implementation project(':pluginapi')
+    implementation project(':opencv')
+    testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
-    compile group: 'org.bytedeco', name: 'javacv', version: '1.4.1'
-    compile group: 'org.bytedeco', name: 'javacpp', version: '1.4.1'
-    compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.1-1.4.1', classifier: 'android-arm'
-    compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.1-1.4.1', classifier: 'android-arm64'
-    compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.1-1.4.1', classifier: 'android-x86'
-    compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.1-1.4.1', classifier: 'android-x86_64'
-    compile group: 'org.bytedeco.javacpp-presets', name: 'ffmpeg', version: '3.4.2-1.4.1', classifier: 'android-arm'
-    compile group: 'org.bytedeco.javacpp-presets', name: 'ffmpeg', version: '3.4.2-1.4.1', classifier: 'android-arm64'
-    compile group: 'org.bytedeco.javacpp-presets', name: 'ffmpeg', version: '3.4.2-1.4.1', classifier: 'android-x86'
-    compile group: 'org.bytedeco.javacpp-presets', name: 'ffmpeg', version: '3.4.2-1.4.1', classifier: 'android-x86_64'
+    //compile group: 'org.bytedeco', name: 'javacv', version: '1.4.1'
+    //compile group: 'org.bytedeco', name: 'javacpp', version: '1.4.1'
+    //compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.1-1.4.1', classifier: 'android-arm'
+    //compile group: 'org.bytedeco.javacpp-presets', name: 'ffmpeg', version: '3.4.2-1.4.1', classifier: 'android-arm'
 }
