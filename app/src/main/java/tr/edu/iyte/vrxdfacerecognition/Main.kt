@@ -12,6 +12,7 @@ import org.opencv.imgproc.Imgproc
 import org.opencv.objdetect.CascadeClassifier
 import org.opencv.objdetect.Objdetect
 import tr.edu.iyte.vrxd.api.IPlugin
+import tr.edu.iyte.vrxd.api.data.Rectangle
 import tr.edu.iyte.vrxd.api.data.Shape
 //import java.io.File
 //import java.nio.IntBuffer
@@ -21,7 +22,7 @@ import java.util.concurrent.Executors
 //import org.bytedeco.javacpp.opencv_core.CV_32SC1
 //import org.bytedeco.javacpp.opencv_imgcodecs.CV_LOAD_IMAGE_GRAYSCALE
 //import org.bytedeco.javacpp.opencv_imgcodecs.imread
-import org.opencv.face.LBPHFaceRecognizer
+//import org.opencv.face.LBPHFaceRecognizer
 
 class Main : IPlugin {
     private val pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2)
@@ -30,8 +31,11 @@ class Main : IPlugin {
     private var cascade: CascadeClassifier? = null
     private var frameC = 0
     private val color = Scalar(255.0, 0.0, 0.0)
-    private val minSize = Size(0.0, 0.0)
-    private val maxSize = Size(300.0, 300.0)
+    private val minSize = Size(10.0, 10.0)
+    private val maxSize = Size(100.0, 100.0)
+
+    // int is frame id
+    private val frames = hashMapOf<Int, Frame>()
 
     override fun isOpenCvExclusive() = true
 
@@ -54,6 +58,7 @@ class Main : IPlugin {
 
     override fun onFrame(frameId: Int, mat: Mat) {
         frameC++
+        frames[frameId] = Frame(frameId, mutableListOf())
 
         pool.submit {
             val ms = System.currentTimeMillis()
@@ -69,8 +74,13 @@ class Main : IPlugin {
 
             val ms3 = System.currentTimeMillis()
 
-            detected.toArray().forEach {
-                Imgproc.rectangle(img, it, color)
+            synchronized(frames) {
+                val frame = frames[frameId]!!
+                detected.toArray().forEach {
+                    Imgproc.rectangle(img, it, color)
+                    frame.shapes.add(Rectangle(it.x, it.y, it.width, it.height, 0.0, 0L))
+                }
+                frame.isReady = true
             }
 
             Imgcodecs.imwrite(Environment.getExternalStorageDirectory().path + "/VRXD/img/$frameC-img.jpg", img)
@@ -84,7 +94,7 @@ class Main : IPlugin {
             Log.i(TAG, "detected faces: ${arr.joinToString()}")
             Log.i(TAG, "elapsed frame process total ${System.currentTimeMillis() - ms}ms")
 
-            val trainData = (0..4).map { val m = Imgcodecs.imread("/sdcard/VRXD/train/$it.jpg", Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE)
+            /*val trainData = (0..4).map { val m = Imgcodecs.imread("/sdcard/VRXD/train/$it.jpg", Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE)
                 Log.i(TAG, "$it okay ${m.rows()} ${m.cols()}")
                 m
             }
@@ -102,19 +112,25 @@ class Main : IPlugin {
                 Log.i(TAG, "predicted label2: ${label.joinToString()} ${conf.joinToString()}")
                 //Log.i(TAG, "predicted label1: ${recognizer.predict_label(Imgcodecs.imread("/sdcard/VRXD/train/5.jpg", Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE))}")
                 //Log.i(TAG, "predicted label2: ${recognizer.predict_label(Imgcodecs.imread("/sdcard/VRXD/train/6.jpg", Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE))}")
-            } catch(e: Exception) {e.printStackTrace()}
+            } catch(e: Exception) {e.printStackTrace()}*/
         }
     }
 
     override fun onFrame(frameId: Int, width: Int, height: Int, bytes: ByteArray) {
         TODO("not implemented")
     }
-    override fun getFrameObjCount(frameId: Int): Int {
-        TODO("not implemented")
-    }
 
-    override fun getFrameObj(frameId: Int, objIdx: Int): Shape {
-        TODO("not implemented")
+    override fun getFrameShapes(frameId: Int): String {
+        if(frames[frameId] == null)
+            return ""
+
+        synchronized(frames) {
+            val builder = StringBuilder(64)
+            for(shape in frames[frameId]!!.shapes) {
+                builder.append(shape.toString()).append(";")
+            }
+            return builder.substring(0, builder.length - 1)
+        }
     }
 
     override fun getResources(): List<String> {
