@@ -120,16 +120,14 @@ class Main : IPlugin {
         TODO("not implemented")
     }
 
-    override fun getFrameShapes(frameId: Int): String {
+    override fun getFrameShapes(frameId: Int): List<Shape> {
         if(frames[frameId] == null)
-            return ""
+            return listOf()
 
         synchronized(frames) {
-            val builder = StringBuilder(64)
-            for(shape in frames[frameId]!!.shapes) {
-                builder.append(shape.toString()).append(";")
-            }
-            return builder.substring(0, builder.length - 1)
+            val s = ArrayList(frames[frameId]!!.shapes)
+            frames.remove(frameId)
+            return s
         }
     }
 
