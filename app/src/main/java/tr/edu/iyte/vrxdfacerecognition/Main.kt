@@ -34,24 +34,26 @@ class Main : IPlugin {
     override fun onStart(ctx: Context) {
         Log.i(TAG, "starting face recog plugin")
         detector = CascadeClassifier(VRXD_LOC.path + "/frontal_face.xml")
-        recognizer = LBPHFaceRecognizer.create()
 
-        // files are like "1 (1).jpg"
-        val group = File("").listFiles().groupBy { it.name.split(" ")[0] }
-        val labels = mutableListOf<Int>()
-        val trainingData = mutableListOf<Mat>()
-        for((label, files) in group) {
-            var i = 0
-            for(file in files) {
-                val l = Integer.parseInt(label)
-                labels.add(l)
-                trainingData.add(Imgcodecs.imread(file.path, Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE))
-                if(DEBUG)
-                    Log.i(TAG, "training load $l ${++i} okay")
+        pool.submit {
+            // files are like "1 (1).jpg"
+            val group = File("").listFiles().groupBy { it.name.split(" ")[0] }
+            val labels = mutableListOf<Int>()
+            val trainingData = mutableListOf<Mat>()
+            for((label, files) in group) {
+                var i = 0
+                for(file in files) {
+                    val l = Integer.parseInt(label)
+                    labels.add(l)
+                    trainingData.add(Imgcodecs.imread(file.path, Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE))
+                    if(DEBUG)
+                        Log.i(TAG, "training load $l ${++i} okay")
+                }
             }
-        }
 
-        recognizer?.train(trainingData, MatOfInt(*labels.toIntArray()))
+            recognizer = LBPHFaceRecognizer.create()
+            recognizer?.train(trainingData, MatOfInt(*labels.toIntArray()))
+        }
     }
 
     override fun onResume(ctx: Context) {
