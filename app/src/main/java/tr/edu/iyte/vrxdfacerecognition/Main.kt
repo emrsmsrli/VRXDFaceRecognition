@@ -56,18 +56,6 @@ class Main : IPlugin {
         }
     }
 
-    override fun onResume(ctx: Context) {
-        TODO("not implemented")
-    }
-
-    override fun onPause(ctx: Context) {
-        TODO("not implemented")
-    }
-
-    override fun onStop(ctx: Context) {
-        TODO("not implemented")
-    }
-
     override fun onFrame(frameId: Int, mat: Mat) {
         frameC++
         val frame = Frame(frameId, mutableListOf())
@@ -91,14 +79,9 @@ class Main : IPlugin {
         }
     }
 
-    override fun getResources(): List<String> {
-        TODO("not implemented")
-    }
-
     private fun detect(frame: Frame, mat: Mat) {
         val detected = MatOfRect()
-        val img = Mat()
-        Core.rotate(Imgcodecs.imdecode(mat, Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE), img, 1)
+        val img = Imgcodecs.imdecode(mat, Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE)
 
         detector?.detectMultiScale(img, detected, 1.08, 1, Objdetect.CASCADE_SCALE_IMAGE
                 and Objdetect.CASCADE_DO_CANNY_PRUNING, minSize, maxSize)
