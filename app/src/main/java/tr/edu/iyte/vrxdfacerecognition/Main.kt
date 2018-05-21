@@ -12,6 +12,7 @@ import org.opencv.objdetect.Objdetect
 import tr.edu.iyte.vrxd.api.IPlugin
 import tr.edu.iyte.vrxd.api.data.Rectangle
 import tr.edu.iyte.vrxd.api.data.Shape
+import tr.edu.iyte.vrxd.api.data.Text
 import tr.edu.iyte.vrxdfacerecognition.BuildConfig.DEBUG
 import java.io.File
 import java.util.concurrent.Executors
@@ -35,19 +36,25 @@ class Main : IPlugin {
         Log.i(TAG, "starting face recog plugin")
         detector = CascadeClassifier(VRXD_LOC.path + "/frontal_face.xml")
 
+        if(!VRXD_TRAIN_LOC.exists())
+            return
+
         pool.submit {
             // files are like "1 (1).jpg"
-            val group = File("").listFiles().groupBy { it.name.split(" ")[0] }
+            val group = VRXD_TRAIN_LOC.listFiles().groupBy { it.name.split(" ")[0] }
             val labels = mutableListOf<Int>()
             val trainingData = mutableListOf<Mat>()
             for((label, files) in group) {
                 var i = 0
                 for(file in files) {
-                    val l = Integer.parseInt(label)
-                    labels.add(l)
+                    try {
+                        labels.add(Integer.parseInt(label))
+                    } catch(e: NumberFormatException) { // defected label, skip samples
+                        break
+                    }
                     trainingData.add(Imgcodecs.imread(file.path, Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE))
                     if(DEBUG)
-                        Log.i(TAG, "training load $l ${++i} okay")
+                        Log.i(TAG, "training data loaded label: $label count: ${++i}")
                 }
             }
 
