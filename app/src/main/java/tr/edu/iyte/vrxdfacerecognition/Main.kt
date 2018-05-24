@@ -118,7 +118,7 @@ class Main : IPlugin {
 
         val faces = mutableListOf<Mat>()
         detected.toArray().forEach {
-            faces.add(mat.submat(it))
+            faces.add(img.submat(it))
             if(DEBUG)
                 Imgproc.rectangle(img, it, color)
             frame.shapes.add(Rectangle(it.x, it.y, it.width, it.height, 0.0, 0L))
