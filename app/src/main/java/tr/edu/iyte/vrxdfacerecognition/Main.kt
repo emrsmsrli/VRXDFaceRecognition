@@ -90,7 +90,10 @@ class Main : IPlugin {
         frames[frameId] = frame
 
         pool.submit {
-            detect(frame, mat)
+            val faces = detect(frame, mat)
+            if(recognizer != null)
+                recognize(frame, faces)
+            frame.isReady = true
         }
     }
 
@@ -107,21 +110,19 @@ class Main : IPlugin {
         }
     }
 
-    private fun detect(frame: Frame, mat: Mat) {
+    private fun detect(frame: Frame, mat: Mat): MutableList<Mat> {
         val detected = MatOfRect()
         val img = Imgcodecs.imdecode(mat, Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE)
 
         detector?.detectMultiScale(img, detected, 1.08, 1, Objdetect.CASCADE_SCALE_IMAGE
                 and Objdetect.CASCADE_DO_CANNY_PRUNING, minSize, maxSize)
 
-        val faces = synchronized(frames) {
-            val f = detected.toArray()
-            f.forEach {
+        val faces = mutableListOf<Mat>()
+        detected.toArray().forEach {
+            faces.add(mat.submat(it))
+            if(DEBUG)
                 Imgproc.rectangle(img, it, color)
-                frame.shapes.add(Rectangle(it.x, it.y, it.width, it.height, 0.0, 0L))
-            }
-            frame.isReady = true // todo send to recognition
-            f
+            frame.shapes.add(Rectangle(it.x, it.y, it.width, it.height, 0.0, 0L))
         }
 
         if(DEBUG) {
@@ -130,6 +131,8 @@ class Main : IPlugin {
             Imgcodecs.imwrite(debugFolder.path + "/$frameC-img.jpg", img)
             Log.d(TAG, "detection complete for frame: ${frame.id}, found faces: ${faces.size}")
         }
+
+        return faces
     }
 
     private fun recognize(frame: Frame, faces: MutableList<Mat>) {
