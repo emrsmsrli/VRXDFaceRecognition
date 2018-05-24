@@ -32,6 +32,8 @@ class Main : IPlugin {
     private val maxSize = Size(100.0, 100.0)
 
     private lateinit var db: Db
+    private val predictedLabel = intArrayOf(0)
+    private val predictionAccuracy = doubleArrayOf(0.0)
 
     // int is frame id
     private val frames = hashMapOf<Int, Frame>()
@@ -130,8 +132,42 @@ class Main : IPlugin {
         }
     }
 
-    private fun recognize() {
+    private fun recognize(frame: Frame, faces: MutableList<Mat>) {
+        if(faces.isEmpty())
+            return
 
+        val texts = mutableListOf<Shape>()
+        synchronized(frame.shapes) {
+            val it = frame.shapes.iterator()
+            val fit = faces.iterator()
+
+            fun rm() {
+                it.remove()
+                fit.remove()
+            }
+
+            while(it.hasNext()) {
+                val shape = it.next()
+                val face = fit.next()
+
+                recognizer?.predict(face, predictedLabel, predictionAccuracy)
+                Log.d(TAG, "prediction ${predictedLabel[0]} ${predictionAccuracy[0]}")
+                if(predictionAccuracy[0] > 50) {
+                    rm()
+                    continue
+                }
+
+                val person = db.find { it.personId == predictedLabel[0] }
+                if(person == null) {
+                    rm()
+                    continue
+                }
+
+                texts.add(Text(shape.x, shape.y, 0, 0.0, person.describe() ,0L))
+            }
+        }
+        frame.shapes.addAll(texts)
+        frame.isReady = true
     }
 
     companion object {
