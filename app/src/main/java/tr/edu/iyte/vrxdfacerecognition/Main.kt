@@ -3,6 +3,7 @@ package tr.edu.iyte.vrxdfacerecognition
 import android.content.Context
 import android.os.Environment
 import android.util.Log
+import com.google.gson.Gson
 import org.opencv.core.*
 import org.opencv.face.LBPHFaceRecognizer
 import org.opencv.imgcodecs.Imgcodecs
@@ -14,7 +15,9 @@ import tr.edu.iyte.vrxd.api.data.Rectangle
 import tr.edu.iyte.vrxd.api.data.Shape
 import tr.edu.iyte.vrxd.api.data.Text
 import tr.edu.iyte.vrxdfacerecognition.BuildConfig.DEBUG
+import tr.edu.iyte.vrxdfacerecognition.db.Db
 import java.io.File
+import java.util.*
 import java.util.concurrent.Executors
 
 class Main : IPlugin {
@@ -27,6 +30,8 @@ class Main : IPlugin {
     private val color = Scalar(255.0, 0.0, 0.0)
     private val minSize = Size(10.0, 10.0)
     private val maxSize = Size(100.0, 100.0)
+
+    private lateinit var db: Db
 
     // int is frame id
     private val frames = hashMapOf<Int, Frame>()
@@ -45,6 +50,15 @@ class Main : IPlugin {
             return
 
         pool.submit {
+            val json = Scanner(File(VRXD_TRAIN_LOC, "db.json")).use {
+                val builder = StringBuilder(128)
+                while(it.hasNextLine())
+                    builder.append(it.nextLine())
+                builder.toString()
+            }
+
+            db = Gson().fromJson(json, Db::class.java) // any exception disables recognition
+
             // files are like "1 (1).jpg"
             val group = VRXD_TRAIN_LOC.listFiles().groupBy { it.name.split(" ")[0] }
             val labels = mutableListOf<Int>()
