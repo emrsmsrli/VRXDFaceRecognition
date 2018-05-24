@@ -28,7 +28,7 @@ class Main : IPlugin {
     private var recognizer: LBPHFaceRecognizer? = null
     private var frameC = 0
     private val color = Scalar(255.0, 0.0, 0.0)
-    private val minSize = Size(10.0, 10.0)
+    private val minSize = Size(20.0, 20.0)
     private val maxSize = Size(100.0, 100.0)
 
     private lateinit var db: Db
@@ -90,7 +90,8 @@ class Main : IPlugin {
         frames[frameId] = frame
 
         pool.submit {
-            val faces = detect(frame, mat)
+            val img = Imgcodecs.imdecode(mat, Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE)
+            val faces = detect(frame, img)
             if(recognizer != null)
                 recognize(frame, faces)
             frame.isReady = true
@@ -111,23 +112,31 @@ class Main : IPlugin {
 
     private fun detect(frame: Frame, mat: Mat): MutableList<Mat> {
         val detected = MatOfRect()
-        val img = Imgcodecs.imdecode(mat, Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE)
-
-        detector?.detectMultiScale(img, detected, 1.08, 1, Objdetect.CASCADE_SCALE_IMAGE
+        detector?.detectMultiScale(mat, detected, 1.05, 3, Objdetect.CASCADE_SCALE_IMAGE
                 and Objdetect.CASCADE_DO_CANNY_PRUNING, minSize, maxSize)
 
+        val startX = mat.width() / 4
+        val startY = mat.height() / 8
+        val endX = mat.width() - startX * 2
+        val endY = mat.height() - startY * 2
+        val roi = Rect(startX, startY, endX, endY)
+
         val faces = mutableListOf<Mat>()
-        detected.toArray().forEach {
-            faces.add(img.submat(it))
+        for(rect in detected.toArray()) {
+            if(!rect.tl().inside(roi) || !rect.br().inside(roi))
+                continue
+
+            faces.add(mat.submat(rect))
             if(DEBUG)
-                Imgproc.rectangle(img, it, color)
-            frame.shapes.add(Rectangle(it.x, it.y, it.width, it.height, 0.0, 0L))
+                Imgproc.rectangle(mat, rect, color)
+            frame.shapes.add(Rectangle(rect.x, rect.y, rect.width, rect.height, 0.0, 0L))
         }
 
         if(DEBUG) {
             if(!debugFolder.exists())
                 debugFolder.mkdir()
-            Imgcodecs.imwrite(debugFolder.path + "/$frameC-img.jpg", img)
+            Imgproc.rectangle(mat, roi, color)
+            Imgcodecs.imwrite(debugFolder.path + "/$frameC-img.jpg", mat)
             Log.d(TAG, "detection complete for frame: ${frame.id}, found faces: ${faces.size}")
         }
 
