@@ -20,6 +20,7 @@ import java.util.concurrent.Executors
 class Main : IPlugin {
     private val pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2)
 
+    private lateinit var debugFolder: File
     private var detector: CascadeClassifier? = null
     private var recognizer: LBPHFaceRecognizer? = null
     private var frameC = 0
@@ -104,10 +105,9 @@ class Main : IPlugin {
         }
 
         if(DEBUG) {
-            val dbgFolder = File(VRXD_LOC, "debug")
-            if(!dbgFolder.exists())
-                dbgFolder.mkdir()
-            Imgcodecs.imwrite(dbgFolder.path + "/$frameC-img.jpg", img)
+            if(!debugFolder.exists())
+                debugFolder.mkdir()
+            Imgcodecs.imwrite(debugFolder.path + "/$frameC-img.jpg", img)
             Log.d(TAG, "detection complete for frame: ${frame.id}, found faces: ${faces.size}")
         }
     }
