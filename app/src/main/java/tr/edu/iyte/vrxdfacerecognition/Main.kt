@@ -37,6 +37,10 @@ class Main : IPlugin {
         Log.i(TAG, "starting face recog plugin")
         detector = CascadeClassifier(VRXD_LOC.path + "/frontal_face.xml")
 
+        if(DEBUG) {
+            debugFolder = File(VRXD_LOC, "debug")
+        }
+
         if(!VRXD_TRAIN_LOC.exists())
             return
 
