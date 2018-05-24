@@ -169,7 +169,6 @@ class Main : IPlugin {
             }
         }
         frame.shapes.addAll(texts)
-        frame.isReady = true
     }
 
     companion object {
