@@ -86,7 +86,7 @@ class Main : IPlugin {
 
     override fun onFrame(frameId: Int, mat: Mat) {
         frameC++
-        val frame = Frame(frameId, mutableListOf())
+        val frame = Frame(frameId, Collections.synchronizedList(mutableListOf()))
         frames[frameId] = frame
 
         pool.submit {
