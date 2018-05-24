@@ -102,12 +102,11 @@ class Main : IPlugin {
     }
 
     override fun getFrameShapes(frameId: Int): List<Shape> {
-        if(frames[frameId] == null)
-            return listOf()
+        val frame = frames[frameId]
+        if(frame == null || !frame.isReady)
+            return emptyList()
 
-        return synchronized(frames) {
-            ArrayList(frames[frameId]!!.shapes)
-        }
+        return ArrayList(frames[frameId]!!.shapes)
     }
 
     private fun detect(frame: Frame, mat: Mat): MutableList<Mat> {
